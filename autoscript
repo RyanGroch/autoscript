@@ -146,13 +146,13 @@ create_example_or_config() {
                 do 
                     names_skipped=$((names_skipped+1))
                 done
-                name="${name}_${names_skipped}${extension}"
+                name="${name}_${names_skipped}"
             fi
 
             # Create file/directory.
             case "$1" in
-              "$example") create_example_dir "$name" ;;
-               "$config") create_config_file "$name" ;;
+              "$example") create_example_dir "$name"           ;;
+               "$config") create_config_file "$name$extension" ;;
             esac
         fi
     fi
@@ -342,7 +342,7 @@ run_file() {
         fi
 
         # Type command
-        tmux send-keys -l -t "$session_name" "$current_command"
+        tmux send-keys -l -t "$session_name" -- "$current_command"
         sleep $((after_type_delay/1000))
 
         # Press enter
@@ -422,7 +422,7 @@ confirmation_message() {
     echo    "I'm done. If you wish to interrupt me after I start,   "
     echo    "press the following key combinations in order:         "
     echo    "                                                       "
-    echo -e "${blue}CTRL+B{nc} followed by ${blue}d${nc}            "
+    echo -e "${blue}CTRL+B${nc} followed by ${blue}d${nc}           "
     echo -e "followed by ${blue}CTRL+C${nc}                         "
     echo    "                                                       "
     read -p "<Press Enter to Begin>                                 "
@@ -625,7 +625,7 @@ cat << EOF
  *                                                               *
  *   DESCRIPTION:                                                *
  *                                                               *
- *   A sample program to demonstrate the use of autoscript.      *
+ *   A sample program to demonstrate the use of Autoscript.      *
  *                                                               *
  *   The user enters two integers, and the program prints        *
  *   the sum to the console.                                     *
