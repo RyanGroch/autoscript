@@ -20,6 +20,16 @@ sudo snap install yq
 
 It is worth mentioning that `tmux` should be installed by default on Ubuntu Server.
 
+## Installation
+
+You can install Autoscript by entering the following into a terminal:
+
+```sh
+git clone https://github.com/RyanGroch/autoscript.git _Autoscript_Temp &&
+sudo cp _Autoscript_Temp/autoscript /usr/local/bin &&
+rm -rf _Autoscript_Temp
+```
+
 ## Usage
 
 The primary way to use Autoscript is to pass in a configuration file, like this:

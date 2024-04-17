@@ -35,10 +35,10 @@ declare -ri base_default_delay=500
 
 # Colors
 # These constants are used to render colored text.
-declare -r red='\033[0;31m'
-declare -r green='\033[0;32m'
-declare -r yellow='\033[0;33m'
-declare -r blue='\033[0;34m'
+declare -r red='\033[1;31m'
+declare -r green='\033[1;32m'
+declare -r yellow='\033[1;33m'
+declare -r blue='\033[1;34m'
 declare -r nc='\033[0m' # No color
 
 # Config/Example Constants
@@ -291,7 +291,7 @@ validate_file_or_exit() {
     # else set default_delay to a base value.
     default_delay="$(yq '.default_delay' "$1")"
     if ! [[ $default_delay =~ $is_pos_integer ]]; then
-        echo "No 'default_delay' detected."
+        echo "No valid 'default_delay' detected."
         default_delay="$base_default_delay"
     fi
     
