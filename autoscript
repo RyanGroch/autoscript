@@ -1,0 +1,669 @@
+#!/bin/bash
+
+####################################################################
+#                                                                  #
+#                          Autoscript                              #
+#                                                                  #
+# This program takes a configuration file as input and will        #
+# automatically type all specified commands into a terminal.       #
+# It is also capable of generating configuration files or an       #
+# example lab that showcases Autoscript's usage.                   #
+#                                                                  #
+# The intention of this program is to enable computer science      #
+# students at Harper College to easily script their homework       #
+# assignments without much manual typing.                          #
+#                                                                  #
+# Autoscript is intended to run on Ubuntu Server. The following    #
+# tools are necessary for this script to work properly:            #
+#                                                                  #
+#   tmux    - terminal multiplexer.                                #
+#   yq      - parses the YAML file passed as input.                #
+#                                                                  #
+# The following commands can install the above tools:              #
+#                                                                  #
+#   sudo apt install tmux                                          #
+#   sudo snap install yq                                           #
+#                                                                  #
+####################################################################
+
+# Delay-Related Integer Constants
+# These constants define the number of milliseconds that Autoscript
+# should pause for at various moments throughout the program.
+declare -ri after_open_tmux_delay=2500
+declare -ri after_type_delay=250
+declare -ri base_default_delay=500
+
+# Colors
+# These constants are used to render colored text.
+declare -r red='\033[0;31m'
+declare -r green='\033[0;32m'
+declare -r yellow='\033[0;33m'
+declare -r blue='\033[0;34m'
+declare -r nc='\033[0m' # No color
+
+# Config/Example Constants
+# These constants are used as settings for create_example_or_config.
+# They serve as both a setting and a default file/directory name.
+declare -r config='autoscript_config'
+declare -r example='autoscript_example'
+
+# Regex
+# One regular expression is used to validate integers
+# that represent delays.
+declare -r is_pos_integer='^[1-9]([0-9]+)?$' 
+
+# Session Name
+# Tmux session name.
+declare -r session_name='Autoscript'
+
+# Global Variable
+# Holds the default number of milliseconds to pause after
+# typing each command. This can be specified in the configuration
+# file or assigned by default to the value of base_default_delay.
+declare default_delay
+
+####################################################################
+#                          Core Logic                              #
+#    The functions below make up the main logic of the program.    #
+####################################################################
+
+#
+# main
+#
+# This function is the entry point of the program.
+# Calls the appropriate function for the user's input. 
+#
+# Arguments:
+# $1: An option or the name of a file passed into the program.
+# $2: An optional name of the file/directory to create, in the
+#     case of --config and --example.
+#
+main() {
+    # Don't allow user to do anything if they are already in Tmux.
+    if [ -z "${TMUX}" ];
+    then
+        case $1 in
+         "" | "--help") help_message                             ;;
+            "--config") create_example_or_config "$config" "$2"  ;;
+           "--example") create_example_or_config "$example" "$2" ;;
+
+                     # Unrecognized option is treated as file.
+                     *) handle_file "$1"                         ;;
+        esac
+    else
+        throw_err_and_exit \
+        "You are in a pseudo-terminal. Run 'exit' before using Autoscript."
+    fi
+}
+
+#
+# create_example_or_config
+#
+# Creates either a configuration file or an example lab.
+# If the default name for the new file/directory is
+# already taken, this function appends an integer at the end
+# of the name and increments it until it finds a name
+# that is not in use.
+#
+# Arguments:
+# $1: A setting specifying whether this function should
+#     create a configuration file or an example lab.
+# $2: An optional name of the file/directory to create.
+#
+create_example_or_config() {
+    # Check for bad function call.
+    if [ "$1" = "$example" ] || [ "$1" = "$config" ];
+    then
+        # Check if user passed in a name.
+        if [ -n "$2" ];
+        then
+            # Try to create file/directory.
+            case "$1" in
+              "$example") create_example_dir "$2" ;;
+               "$config") create_config_file "$2" ;;
+            esac
+        # If no name was passed in, use a default.
+        else
+            name="$1"
+
+            # Add extension to default file name.
+            if [ "$name" = "$config" ];
+            then
+                extension=".yml"
+            fi
+
+            # If the default name is taken, append  
+            # an integer to the end of the name.
+            if [ -d "${name}${extension}" ] ||
+               [ -f "${name}${extension}" ];
+            then
+                names_skipped=1
+
+                # Keep incrementing the integer
+                # until a valid name is found.
+                while [ -d "${name}_${names_skipped}${extension}" ] ||
+                      [ -f "${name}_${names_skipped}${extension}" ];
+                do 
+                    names_skipped=$((names_skipped+1))
+                done
+                name="${name}_${names_skipped}${extension}"
+            fi
+
+            # Create file/directory.
+            case "$1" in
+              "$example") create_example_dir "$name" ;;
+               "$config") create_config_file "$name" ;;
+            esac
+        fi
+    fi
+}
+
+#
+# create_example_dir
+#
+# Creates an example lab that can be used to demonstrate
+# the usage of Autoscript.
+#
+# Arguments:
+# $1: The name of the new directory to create.
+#
+create_example_dir() {
+    # Check that the directory can be created.
+    mkdir "$1" &>/dev/null
+    if [ $? -eq 0 ];
+    then
+        # Add files to the new directory.
+        example_config_contents > "$1/autoscript_config.yml"
+        example_cpp_contents > "$1/autoscript_example.cpp"
+        example_info_contents > "$1/autoscript_example.info"
+        example_tpq_contents > "$1/autoscript_example.tpq"
+
+        echo -e "Created directory ${blue}$1${nc}.                   "
+        echo    "To try out Autoscript, run the following commands:  "
+        echo    "                                                    "
+        echo -e "${green}cd ${blue}$1                                "
+        echo -e "${green}autoscript ${blue}autoscript_config.yml${nc}"
+        echo    "                                                    "
+        echo    "Be sure to examine the contents of                  "
+        echo -e "${blue}autoscript_config.yml${nc} so that you can   "
+        echo    "better understand how Autoscript works.             "
+        echo    "                                                    "
+    else
+        throw_err_and_exit "Could not create directory '$1'".
+    fi
+}
+
+#
+# create_config_file
+#
+# Creates a configuration file with the necessary boilerplate.
+#
+# Arguments:
+# $1: The name of the new file to create.
+#
+create_config_file() {
+    # Check that the file can be created.
+    # Easiest way to check is to create a directory of the same name.
+    mkdir "$1" &>/dev/null
+    if [ $? -eq 0 ];
+    then
+        # Delete the directory and replace it with a file.
+        rmdir "$1"
+        config_file_contents > "$1"
+
+        echo -e "Created file ${blue}$1${nc}.                       "
+        echo    "Add your desired commands to this file.            "
+        echo    "When you are finished, you can run the following:  "
+        echo    "                                                   "
+        echo -e "${green}autoscript ${blue}$1${nc}                  "
+        echo    "                                                   "
+    else
+        throw_err_and_exit "Could not create file '$1'".
+    fi
+}
+
+#
+# handle_file
+#
+# A function that runs when the user attempts to pass in a file
+# or any unrecognized option. After running validation and getting
+# confirmation from the user, this function uses the 'tmux'
+# utility to open a pseudo-terminal to type commands into.
+#
+# Arguments:
+# $1: The name of a configuration file passed in by the user.
+#
+handle_file() {
+    # Serves as a guard clause. Exits on failed validation.
+    validate_file_or_exit "$1"
+
+    # File is known to be valid; ask user to proceed.
+    confirmation_message
+    
+    # If the session we want to use already exists, delete it.
+    tmux kill-session -t "$session_name" &>/dev/null
+
+    # Open new session; current terminal does the typing
+    # while the pseudo-terminal gets typed into.
+    tmux new-session -s "$session_name" | run_file "$1"
+
+    echo -e "\n${yellow}Autoscript is finished.${nc}\n"
+}
+
+#
+# validate_file_or_exit
+#
+# Ensures that the name passed in by the user refers to a file 
+# with valid YAML that has a "commands" label. Exits the 
+# program if the file is not valid. Checks and sets
+# default_delay.
+#
+# Arguments:
+# $1: The name of a file, passed in by the user.
+#
+validate_file_or_exit() {
+    # Check that the file exists, or exit.
+    if ! [ -f "$1" ]; 
+    then
+        throw_err_and_exit \
+        "Error: '$1' is not a valid file or option."
+    fi
+
+    # Try to parse the file as YAML.
+    yq -e "$1" &>/dev/null
+
+    # Check that parsing succeeded, or exit.
+    if [ $? -ne 0 ];
+    then
+        throw_err_and_exit \
+        "Error: '$1' is not a valid configuration file."
+    
+    # Check for presence of 'commands' label, or exit.
+    elif [ "$(yq '.commands | has(0)' "$1")" = false ]; 
+    then
+        throw_err_and_exit \
+        "Error: '$1' needs a 'commands' label with at least one item."
+    fi
+
+    echo "Input file is valid."
+
+    # Check for valid user-defined default_delay,
+    # else set default_delay to a base value.
+    default_delay="$(yq '.default_delay' "$1")"
+    if ! [[ $default_delay =~ $is_pos_integer ]]; then
+        echo "No 'default_delay' detected."
+        default_delay="$base_default_delay"
+    fi
+    
+    echo "Using $default_delay for 'default_delay'."
+    echo "***"
+}
+
+#
+# run_file
+#
+# Executes every command listed under the "commands" label
+# in the configuration file.
+#
+# Arguments:
+# $1: The name of the validated file.
+#
+run_file() {
+    sleep $((after_open_tmux_delay/1000))
+
+    # The "commands" label is an ordered list tracked by this index.
+    command_index=0
+
+    # Read loop implemented with yq.
+    while [ "$(yq ".commands | has($command_index)" "$1")" = true ];
+    do
+        at_index=".commands[$command_index]"
+        current_delay="$default_delay"
+
+        # Read the command at the current index.
+        current_command="$(yq "(...comments=\"\") | $at_index" "$1")"
+
+        # Check whether user is overriding default_delay.
+        if [ "$(yq "$at_index | kind" "$1")" = "map" ] &&
+           [ "$(yq "$at_index | keys | has(0)" "$1")" = true ];
+        then
+            # The real command is only the part before the colon,
+            # so we set the current command to that.
+            current_command="$(yq "(...comments=\"\") | $at_index | keys | .[0]" "$1")"
+
+            # Get the delay.
+            new_delay="$(yq "(...comments=\"\") | $at_index[\"$current_command\"]" "$1")"
+
+            # If the delay is valid, override default_delay.
+            if [[ $new_delay =~ $is_pos_integer ]]; 
+            then
+                current_delay=$new_delay
+            fi
+        fi
+
+        # Type command
+        tmux send-keys -l -t "$session_name" "$current_command"
+        sleep $((after_type_delay/1000))
+
+        # Press enter
+        tmux send-keys -t "$session_name" Enter
+        sleep $((current_delay/1000))
+
+        command_index=$((command_index+1))
+    done    
+}
+
+#
+# throw_err_and_exit
+#
+# Prints an error message and exits the program.
+#
+# Arguments:
+# $1: The error message that this function prints.
+#
+throw_err_and_exit() {
+    echo -e "$red"
+    echo    "$1"
+    echo -e "$nc"
+    exit 1
+}
+
+#
+# help_message
+#
+# The message the appears when the user enters the "--help" option,
+# or passes no arguments into Autoscript.
+#
+help_message() {
+    echo    "                                                       "
+    echo -e "${yellow}Welcome to Autoscript!${nc}                   "
+    echo    "                                                       "
+    echo    "This is a program that will automatically type commands"
+    echo    "into a terminal for you. Using Autoscript, you will    "
+    echo    "be able to script your assignments effortlessly.       "
+    echo    "                                                       "
+    echo -e "${yellow}Usage:                                        "
+    echo    "                                                       "
+    echo -e "${green}autoscript                                     "
+    echo -e "autoscript --help${nc}                                 "                   
+    echo    "You just typed one of these. Prints this message.      "
+    echo    "                                                       "
+    echo -e "${green}autoscript ${blue}CONFIG_FILE_NAME${nc}        "        
+    echo    "Runs autoscript with the config file that you pass in. "
+    echo    "This is the main way to use Autoscript.                "
+    echo    "                                                       "
+    echo -e "${green}autoscript --config                            "
+    echo -e "autoscript --config ${blue}NEW_FILE_NAME${nc}          " 
+    echo    "Creates a configuration file for you to use and edit.  "
+    echo    "Use this if you have a program that you need to script,"
+    echo    "but do not yet have a configuration file for it.       "
+    echo    "                                                       "
+    echo -e "${green}autoscript --example                           "
+    echo -e "autoscript --example ${blue}NEW_DIRECTORY_NAME${nc}    "
+    echo    "Creates an example C++ program with a config file.     " 
+    echo    "Allows you to immediately see Autoscript in action.    "
+    echo    "This is where you should start if you are confused.    "
+    echo    "                                                       "
+}
+
+#
+# confirmation_message
+#
+# The message that appears just before Autoscript begins typing.
+# Asks the user for confirmation before running the script.
+#
+confirmation_message() {
+    echo    "                                                       "
+    echo -e "${yellow}You are about to start Autoscript.${nc}       "
+    echo    "                                                       "
+    echo    "Once you press enter, I'll open a new terminal and type"
+    echo    "your commands for you. I'm not great at recovering     "
+    echo    "from mistakes, so please don't type anything until     "
+    echo    "I'm done. If you wish to interrupt me after I start,   "
+    echo    "press the following key combinations in order:         "
+    echo    "                                                       "
+    echo -e "${blue}CTRL+B{nc} followed by ${blue}d${nc}            "
+    echo -e "followed by ${blue}CTRL+C${nc}                         "
+    echo    "                                                       "
+    read -p "<Press Enter to Begin>                                 "
+}
+
+####################################################################
+#                       Static File Content                        #
+#     Pre-written contents of files that Autoscript can create.    #
+####################################################################
+
+#
+# config_file_contents
+#
+# Here are the contents of the default configuration file that
+# is created when the user runs "autoscript --config".
+#
+config_file_contents() {
+cat << EOF
+# Autoscript configuration file
+
+# Edit this file to suit your specific program.
+# For more detailed instructions on the syntax, see
+# the configuration file produced by 'autoscript --example'.
+
+# Adjust all delays as you see fit.
+# If they are too small, then Autoscript will
+# try to type while a command is still executing.
+
+default_delay: 500
+commands: 
+- "script": 2500
+- "pwd"
+
+# Change 'progname' to the name of your program
+- "cat progname.info"
+- "show-code progname.cpp": 2000
+- "CPP progname.cpp": 3000
+
+- "# Test run 1"
+- "./progname.out"
+# Add your inputs for your first run here
+
+- "# Test run 2"
+- "./progname.out"
+# Add your inputs for your second run here
+
+- "# Test run 3"
+- "./progname.out"
+# Add your inputs for your third run here
+
+
+# Remove this if you don't have a TPQ file
+- "cat progname.tpq"
+
+# Clean-up
+- "exit" # exits script
+- "script-print Last-First-Progname": 5000
+- "exit" # exits pseudo-terminal
+EOF
+}
+
+#
+# example_config_contents
+#
+# Here are the contents of the configuration file for
+# the example lab. This file is created when the
+# user runs "autoscript --example".
+#
+example_config_contents() {
+cat << EOF
+# Autoscript configuration file
+
+# After running this example, it is recommended that
+# you retrieve the output PDF. Doing so will help you 
+# better understand how the inputs in this file translate
+# to the final result.
+
+# By the way, the # symbol represents the start of a comment. 
+# Autoscript ignores comments. If the # sign is in quotation
+# marks (' ' or " "), however, then Autoscript will not
+# treat it as a comment.
+
+# Every Autoscript configuration file starts with a default_delay.
+# The default_delay represents the default number of milliseconds
+# for which Autoscript will pause after typing each command.
+default_delay: 500
+
+# Every Autoscript configuration file also has a 'commands' label.
+# Underneath it are the inputs for your entire script in order.
+# Each individual command should be preceeded with a hyphen '-'
+# and the command itself should be surrounded by
+# single or double quotes (' ' or " ").
+# All hyphens must be aligned in the same column.
+commands: 
+
+# We can override default_delay for individual commands.
+# Here, we instruct autoscript to wait 2.5 seconds after "script".
+- "script": 2500  
+
+# Autoscript pauses for default_delay milliseconds after 
+# the two commands below. 
+# The "<COMMAND>": <NUMBER_OF_MILLISECONDS> syntax only
+# changes the delay on the command that you apply it to.
+- "pwd"
+- "cat autoscript_example.info" 
+
+# Show-code can sometimes take a while, so it makes sense
+# to make the delay a little bit longer. This increases the
+# likelihood that Autoscript will wait until show-code
+# has finished. Here, we instruct Autoscript to wait 
+# for 2 seconds after running the show-code command.
+- "show-code autoscript_example.cpp": 2000
+
+# We can use the "<COMMAND>": <NUMBER_OF_MILLISECONDS> syntax for as
+# many commands as we would like. Compiling often takes a while, 
+# so we instruct Autoscript to pause for 3 seconds so that
+# the program has time to finish compiling.
+- "CPP autoscript_example.cpp": 3000
+ 
+# The below command types a comment IN our script.
+# The line below actually gets typed.
+- "# Test run #1 - expected output is 3"  
+
+# Run our program and type relevant inputs
+- "./autoscript_example.out"
+- "1"
+- "2"
+
+- "# Test run #2 - expected output is 6"
+- "./autoscript_example.out"
+- "10"
+- "-4"
+
+- "# Test run #3 - expected output is 8.32"
+- "./autoscript_example.out"
+- "2.87"
+- "5.45"
+
+- "cat autoscript_example.tpq"
+
+# Stops the script
+- "exit" 
+
+# script-print sometimes takes a while.
+# Let's give it 5 seconds.
+- "script-print Last-First-AutoscriptExample": 5000
+
+# We need another 'exit' to close the
+# pseudo-terminal after stopping the script
+- "exit"
+EOF
+}
+
+#
+# example_cpp_contents
+#
+# Here are the contents of the C++ file for
+# the example lab. This file is created when the
+# user runs "autoscript --example".
+#
+example_cpp_contents() {
+cat << EOF
+#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    double num1, num2;
+
+    cout << "\nEnter your first number: ";
+    cin >> num1;
+
+    cout << "Enter your second number: ";
+    cin >> num2;
+
+    cout << "\nThe sum is " << (num1 + num2) << "\n\n";
+
+    return 0;
+}
+EOF
+}
+
+#
+# example_info_contents
+#
+# Here are the contents of the info file for
+# the example lab. This file is created when the
+# user runs "autoscript --example".
+#
+example_info_contents() {
+cat << EOF
+/*****************************************************************
+ *                                                               *
+ *   NAME:     Name                                              *
+ *   CLASS:    CSC121/CSC122                                     *
+ *   LAB:      Autoscript Example                                *
+ *                                                               *
+ *   LEVELS:   0                                                 *
+ *                                                               *
+ *   DESCRIPTION:                                                *
+ *                                                               *
+ *   A sample program to demonstrate the use of autoscript.      *
+ *                                                               *
+ *   The user enters two integers, and the program prints        *
+ *   the sum to the console.                                     *
+ *                                                               *
+ *****************************************************************/
+
+EOF
+}
+
+#
+# example_tpq_contents
+#
+# Here are the contents of the tpq file for
+# the example lab. This file is created when the
+# user runs "autoscript --example".
+#
+example_tpq_contents() {
+cat << EOF
+/*****************************************************************/
+
+Thought-Provoking Questions
+
+1) First question
+
+First question answer...
+
+2) Second question
+
+Second question answer...
+
+3) Third question
+
+Third question answer...
+
+...And so on and so forth...
+
+EOF
+}
+
+# Entry point
+main "$1" "$2"
