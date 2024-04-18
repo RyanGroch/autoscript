@@ -56,6 +56,10 @@ declare -r is_pos_integer='^[1-9]([0-9]+)?$'
 # Tmux session name.
 declare -r session_name='Autoscript'
 
+# No Comments
+# A yq filter indicating to ignore all comments.
+declare -r no_cmnts="(...comments=\"\")"
+
 # Global Variable
 # Holds the default number of milliseconds to pause after
 # typing each command. This can be specified in the configuration
@@ -285,12 +289,13 @@ validate_file_or_exit() {
         "Error: '$1' needs a 'commands' label with at least one item."
     fi
 
-    echo "Input file is valid."
+    echo "Configuration file is valid."
 
     # Check for valid user-defined default_delay,
     # else set default_delay to a base value.
     default_delay="$(yq '.default_delay' "$1")"
-    if ! [[ $default_delay =~ $is_pos_integer ]]; then
+    if ! [[ $default_delay =~ $is_pos_integer ]]; 
+    then
         echo "No valid 'default_delay' detected."
         default_delay="$base_default_delay"
     fi
@@ -317,22 +322,22 @@ run_file() {
     # Read loop implemented with yq.
     while [ "$(yq ".commands | has($command_index)" "$1")" = true ];
     do
-        at_index=".commands[$command_index]"
+        item_at_index=".commands[$command_index]"
         current_delay="$default_delay"
 
         # Read the command at the current index.
-        current_command="$(yq "(...comments=\"\") | $at_index" "$1")"
+        current_command="$(yq "$no_cmnts | $item_at_index" "$1")"
 
         # Check whether user is overriding default_delay.
-        if [ "$(yq "$at_index | kind" "$1")" = "map" ] &&
-           [ "$(yq "$at_index | keys | has(0)" "$1")" = true ];
+        if [ "$(yq "$item_at_index | kind" "$1")" = "map" ] &&
+           [ "$(yq "$item_at_index | keys | has(0)" "$1")" = true ];
         then
             # The real command is only the part before the colon,
             # so we set the current command to that.
-            current_command="$(yq "(...comments=\"\") | $at_index | keys | .[0]" "$1")"
+            current_command="$(yq "$no_cmnts | $item_at_index | keys | .[0]" "$1")"
 
             # Get the delay.
-            new_delay="$(yq "(...comments=\"\") | $at_index[\"$current_command\"]" "$1")"
+            new_delay="$(yq "$no_cmnts | $item_at_index | to_entries[0][\"value\"]" "$1")"
 
             # If the delay is valid, override default_delay.
             if [[ $new_delay =~ $is_pos_integer ]]; 
@@ -500,7 +505,7 @@ cat << EOF
 # better understand how the inputs in this file translate
 # to the final result.
 
-# By the way, the # symbol represents the start of a comment. 
+# By the way, the # symbol represents the start of a line comment. 
 # Autoscript ignores comments. If the # sign is in quotation
 # marks (' ' or " "), however, then Autoscript will not
 # treat it as a comment.
@@ -512,9 +517,7 @@ default_delay: 500
 
 # Every Autoscript configuration file also has a 'commands' label.
 # Underneath it are the inputs for your entire script in order.
-# Each individual command should be preceeded with a hyphen '-'
-# and the command itself should be surrounded by
-# single or double quotes (' ' or " ").
+# Each individual command should be preceeded with a hyphen '-'.
 # All hyphens must be aligned in the same column.
 commands: 
 
