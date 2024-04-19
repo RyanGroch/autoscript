@@ -69,7 +69,7 @@ commands:
   - "exit" # Closes the pseudo-terminal
 ```
 
-The `default_delay: 500` specifies that Autoscript should pause for 500 milliseconds (or 0.5 seconds) after entering each command. In actuality, Autoscript uses the value of `500` for `default_delay` when the user does not provide a `default_delay` themselves. As such, the above addition doesn't change anything. If we had written `default_delay: 1000` instead, then Autoscript would pause for a full second after typing each command.
+The `default_delay: 500` specifies that Autoscript should pause for 500 milliseconds (or 0.5 seconds) after entering each command. If the user does not provide a `default_delay` themselves, then `default_delay` is set to 0.
 
 Some commands take longer than others to execute. For instance, compiling a complex C++ program is likely to take much longer than `echo 'Hello World'`. Autoscript accounts for this by allowing the user to override `default_delay` for individual commands. Suppose that we are using `g++` to compile a program, and we want Autoscript to pause for a full 5 seconds while this happens. We could make the following addition to the file above:
 
@@ -81,7 +81,7 @@ commands:
   - "exit" # Closes the pseudo-terminal
 ```
 
-Autoscript will pause for 5 seconds after entering `g++ program_name.cpp`. This way, we give the compiler time to do its job before Autoscript tries to type the next command. We can use the `<COMMAND>: <DELAY>` syntax for as many commands as we would like, but we must do so each time we would like Autoscript to pause for a length of time that differs from `default_delay`.
+Autoscript will pause for 5 seconds after entering `g++ program_name.cpp`. This way, we give the compiler time to do its job before Autoscript tries to type the next command. We can use the `COMMAND: DELAY` syntax for as many commands as we would like, but we must do so each time we would like Autoscript to pause for a length of time that differs from `default_delay`.
 
 ### Generating Configuration Files
 

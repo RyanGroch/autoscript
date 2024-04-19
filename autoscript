@@ -29,9 +29,8 @@
 # Delay-Related Integer Constants
 # These constants define the number of milliseconds that Autoscript
 # should pause for at various moments throughout the program.
-declare -ri after_open_tmux_delay=2500
-declare -ri after_type_delay=250
-declare -ri base_default_delay=500
+declare -ri after_open_tmux_delay=1500
+declare -ri base_default_delay=0
 
 # Colors
 # These constants are used to render colored text.
@@ -50,7 +49,7 @@ declare -r example='autoscript_example'
 # Regex
 # One regular expression is used to validate integers
 # that represent delays.
-declare -r is_pos_integer='^[1-9]([0-9]+)?$' 
+declare -r non_neg_integer='^[0-9]+$' 
 
 # Session Name
 # Tmux session name.
@@ -84,7 +83,7 @@ declare default_delay
 #
 main() {
     # Don't allow user to do anything if they are already in Tmux.
-    if [ -z "${TMUX}" ];
+    if [ -z "$TMUX" ];
     then
         case $1 in
          "" | "--help") help_message                             ;;
@@ -294,7 +293,7 @@ validate_file_or_exit() {
     # Check for valid user-defined default_delay,
     # else set default_delay to a base value.
     default_delay="$(yq '.default_delay' "$1")"
-    if ! [[ $default_delay =~ $is_pos_integer ]]; 
+    if ! [[ $default_delay =~ $non_neg_integer ]]; 
     then
         echo "No valid 'default_delay' detected."
         default_delay="$base_default_delay"
@@ -314,7 +313,7 @@ validate_file_or_exit() {
 # $1: The name of the validated file.
 #
 run_file() {
-    sleep $((after_open_tmux_delay/1000))
+    sleep "$(echo "scale=3; $after_open_tmux_delay/1000" | bc)"
 
     # The "commands" label is an ordered list tracked by this index.
     command_index=0
@@ -340,7 +339,7 @@ run_file() {
             new_delay="$(yq "$no_cmnts | $item_at_index | to_entries[0][\"value\"]" "$1")"
 
             # If the delay is valid, override default_delay.
-            if [[ $new_delay =~ $is_pos_integer ]]; 
+            if [[ $new_delay =~ $non_neg_integer ]]; 
             then
                 current_delay=$new_delay
             fi
@@ -348,11 +347,10 @@ run_file() {
 
         # Type command
         tmux send-keys -l -t "$session_name" -- "$current_command"
-        sleep $((after_type_delay/1000))
 
         # Press enter
         tmux send-keys -t "$session_name" Enter
-        sleep $((current_delay/1000))
+        sleep "$(echo "scale=3; $current_delay/1000" | bc)"
 
         command_index=$((command_index+1))
     done    
@@ -456,15 +454,15 @@ cat << EOF
 # If they are too small, then Autoscript will
 # try to type while a command is still executing.
 
-default_delay: 500
+default_delay: 0
 commands: 
-- "script": 2500
+- "script": 1500
 - "pwd"
 
 # Change 'progname' to the name of your program
 - "cat progname.info"
 - "show-code progname.cpp": 2000
-- "CPP progname.cpp": 3000
+- "CPP progname.cpp": 1500
 
 - "# Test run 1"
 - "./progname.out"
@@ -484,7 +482,7 @@ commands:
 
 # Clean-up
 - "exit" # exits script
-- "script-print Last-First-Progname": 5000
+- "script-print Last-First-Progname": 2000
 - "exit" # exits pseudo-terminal
 EOF
 }
@@ -510,25 +508,31 @@ cat << EOF
 # marks (' ' or " "), however, then Autoscript will not
 # treat it as a comment.
 
-# Every Autoscript configuration file starts with a default_delay.
+# Configuration files may optionally start with a default_delay.
 # The default_delay represents the default number of milliseconds
-# for which Autoscript will pause after typing each command.
-default_delay: 500
+# for which Autoscript will pause after entering each command.
+# Here we set default_delay to 0, and in doing so we specify
+# that Autoscript should not pause after most commands.
+# If you do not explicitly specify a default_delay, then
+# Autoscript will treat the value of default_delay as 0.
+# Therefore, you could comment out this line below with no effect.
+default_delay: 0
 
-# Every Autoscript configuration file also has a 'commands' label.
+# Every Autoscript configuration file must have a 'commands' label.
 # Underneath it are the inputs for your entire script in order.
 # Each individual command should be preceeded with a hyphen '-'.
 # All hyphens must be aligned in the same column.
 commands: 
 
 # We can override default_delay for individual commands.
-# Here, we instruct autoscript to wait 2.5 seconds after "script".
-- "script": 2500  
+# Here, we instruct autoscript to wait 1.5 seconds after "script".
+- "script": 1500  
 
 # Autoscript pauses for default_delay milliseconds after 
-# the two commands below. 
-# The "<COMMAND>": <NUMBER_OF_MILLISECONDS> syntax only
-# changes the delay on the command that you apply it to.
+# both of the two commands below. As default_delay is 0,
+# Autoscript doesn't pause at all after these two.
+# Note that the COMMAND: NUMBER_OF_MILLISECONDS syntax only
+# changes the delay for the command that you apply it to.
 - "pwd"
 - "cat autoscript_example.info" 
 
@@ -536,20 +540,24 @@ commands:
 # to make the delay a little bit longer. This increases the
 # likelihood that Autoscript will wait until show-code
 # has finished. Here, we instruct Autoscript to wait 
-# for 2 seconds after running the show-code command.
+# for 2 seconds after entering the show-code command.
 - "show-code autoscript_example.cpp": 2000
 
-# We can use the "<COMMAND>": <NUMBER_OF_MILLISECONDS> syntax for as
+# We can use the COMMAND: NUMBER_OF_MILLISECONDS syntax for as
 # many commands as we would like. Compiling often takes a while, 
-# so we instruct Autoscript to pause for 3 seconds so that
-# the program has time to finish compiling.
-- "CPP autoscript_example.cpp": 3000
+# so we again instruct Autoscript to pause for 1.5 seconds while
+# the program finishes compiling.
+- "CPP autoscript_example.cpp": 1500
+
+# Up until the script-print, all of the commands below
+# will pause Autoscript for default_delay (that is, 0) 
+# milliseconds after they are entered.
  
 # The below command types a comment IN our script.
-# The line below actually gets typed.
+# That is, the line below actually gets typed.
 - "# Test run #1 - expected output is 3"  
 
-# Run our program and type relevant inputs
+# Run our program and type relevant inputs.
 - "./autoscript_example.out"
 - "1"
 - "2"
@@ -570,8 +578,8 @@ commands:
 - "exit" 
 
 # script-print sometimes takes a while.
-# Let's give it 5 seconds.
-- "script-print Last-First-AutoscriptExample": 5000
+# Let's give it 2 seconds.
+- "script-print Last-First-AutoscriptExample": 2000
 
 # We need another 'exit' to close the
 # pseudo-terminal after stopping the script
