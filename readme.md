@@ -2,7 +2,7 @@
 
 This script automatically types commands into a terminal. It is designed to help computer science students at Harper College prepare their assignments for submission. Students at Harper are often required to use the `script` Unix command to record the inputs and outputs of their programs. Students manually run their programs several times, and doing so requires a reasonable amount of typing. This program does the typing for students so that they can speed up their workflows.
 
-Autoscript was designed to run on Ubuntu Server. Users should invoke this script over SSH rather than run it locally on their own computers.
+Autoscript was designed to run on Ubuntu Server. Users will usually invoke this script over SSH rather than run it locally on their own computers.
 
 ## Dependencies
 
@@ -11,25 +11,33 @@ Two command-line utilities are necessary for this script to run properly:
 - [tmux](https://github.com/tmux/tmux/wiki), a utility that allows users to open pseudo-terminals.
 - [yq](https://github.com/mikefarah/yq), a utility for parsing [YAML](https://yaml.org/spec/1.2.2/) files.
 
-The installation commands are below:
+Generally, `tmux` is installed by default on Ubuntu Server. Therefore, it is likely only necessary to install `yq`. The [yq GitHub Page](https://github.com/mikefarah/yq#install) offers the two installation methods below. Either should work fine for an Ubuntu Server OS with an x86_64 architecture. Using `sudo` may also be necessary.
 
 ```sh
-sudo apt install tmux
-sudo snap install yq
+wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&\
+    chmod +x /usr/bin/yq
 ```
 
-It is worth mentioning that `tmux` will likely be installed by default on Ubuntu Server.
+Or, via snap:
+
+```sh
+snap install yq
+```
+
+Alternatively, you can download the binary manually from [here](https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64), transfer the file to the server via sftp, and move it into the appropriate folder.
 
 ## Installation
 
-You can install Autoscript by entering the following into a terminal:
+You can install Autoscript with the following command:
 
 ```sh
-git clone https://github.com/RyanGroch/autoscript.git _Autoscript_Temp &&
-sudo cp _Autoscript_Temp/autoscript /usr/local/bin &&
-sudo chmod +x /usr/local/bin/autoscript &&
+git clone https://github.com/RyanGroch/autoscript.git _Autoscript_Temp &&\
+sudo cp _Autoscript_Temp/autoscript /usr/local/bin &&\
+sudo chmod +x /usr/local/bin/autoscript &&\
 rm -rf _Autoscript_Temp
 ```
+
+Again, you can use the manual approach if the above command fails. You can copy and paste the `autoscript` file from this repository into `/usr/local/bin`.
 
 ## Usage
 

@@ -456,7 +456,7 @@ cat << EOF
 
 default_delay: 0
 commands: 
-- "script": 1500
+- "script": 500
 - "pwd"
 
 # Change 'progname' to the name of your program
@@ -499,7 +499,7 @@ cat << EOF
 # Autoscript configuration file
 
 # After running this example, it is recommended that
-# you retrieve the output PDF. Doing so will help you 
+# you retrieve the output PDF. Doing so may help you 
 # better understand how the inputs in this file translate
 # to the final result.
 
@@ -511,36 +511,32 @@ cat << EOF
 # Configuration files may optionally start with a default_delay.
 # The default_delay represents the default number of milliseconds
 # for which Autoscript will pause after entering each command.
-# Here we set default_delay to 0, and in doing so we specify
-# that Autoscript should not pause after most commands.
-# If you do not explicitly specify a default_delay, then
-# Autoscript will treat the value of default_delay as 0.
-# Therefore, you could comment out this line below with no effect.
-default_delay: 0
+# Here we set default_delay to 500, and in doing so we specify
+# that Autoscript should pause for 0.5 seconds after entering
+# each command. If you do not explicitly specify a default_delay,
+# then Autoscript will treat the value of default_delay as 0.
+# For most cases a default_delay of 0 is fine, but let's
+# use 500 here for demonstration purposes.
+default_delay: 500
 
 # Every Autoscript configuration file must have a 'commands' label.
 # Underneath it are the inputs for your entire script in order.
-# Each individual command should be preceeded with a hyphen '-'.
-# All hyphens must be aligned in the same column.
+# Each individual command should be preceded with a hyphen '-'.
+# All hyphens must be aligned in the same column. There must also
+# be a space between the hyphen and the command.
 commands: 
 
-# We can override default_delay for individual commands.
-# Here, we instruct autoscript to wait 1.5 seconds after "script".
-- "script": 1500  
-
-# Autoscript pauses for default_delay milliseconds after 
-# both of the two commands below. As default_delay is 0,
-# Autoscript doesn't pause at all after these two.
-# Note that the COMMAND: NUMBER_OF_MILLISECONDS syntax only
-# changes the delay for the command that you apply it to.
+# Autoscript pauses for default_delay (500) milliseconds after 
+# each of the three commands below.
+- "script" 
 - "pwd"
 - "cat autoscript_example.info" 
 
-# Show-code can sometimes take a while, so it makes sense
-# to make the delay a little bit longer. This increases the
-# likelihood that Autoscript will wait until show-code
-# has finished. Here, we instruct Autoscript to wait 
-# for 2 seconds after entering the show-code command.
+# We can override default_delay for individual commands.
+# Here, we instruct autoscript to wait 2 seconds after entering
+# the show-code command.
+# This increases the likelihood that Autoscript will wait until
+# show-code has finished before typing the next command. 
 - "show-code autoscript_example.cpp": 2000
 
 # We can use the COMMAND: NUMBER_OF_MILLISECONDS syntax for as
@@ -549,12 +545,15 @@ commands:
 # the program finishes compiling.
 - "CPP autoscript_example.cpp": 1500
 
-# Up until the script-print, all of the commands below
-# will pause Autoscript for default_delay (that is, 0) 
-# milliseconds after they are entered.
+# Up until the script-print, Autoscript will pause for 
+# default_delay (500) milliseconds after entering
+# each of the commands below.
+# Note that the COMMAND: NUMBER_OF_MILLISECONDS syntax only
+# changes the delay for the command that you apply it to.
+# and we don't use it again until the script-print.
  
 # The below command types a comment IN our script.
-# That is, the line below actually gets typed.
+# Autoscript actually types the line below.
 - "# Test run #1 - expected output is 3"  
 
 # Run our program and type relevant inputs.
@@ -577,12 +576,12 @@ commands:
 # Stops the script
 - "exit" 
 
-# script-print sometimes takes a while.
+# Script-print sometimes takes a while.
 # Let's give it 2 seconds.
 - "script-print Last-First-AutoscriptExample": 2000
 
 # We need another 'exit' to close the
-# pseudo-terminal after stopping the script
+# pseudo-terminal after stopping the script.
 - "exit"
 EOF
 }
