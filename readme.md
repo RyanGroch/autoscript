@@ -1,6 +1,8 @@
 # Autoscript
 
-This script automatically types commands into a terminal. It is designed to help computer science students at Harper College prepare their assignments for submission. Students at Harper are often required to use the `script` Unix command to record the inputs and outputs of their programs. Students manually run their programs several times, and doing so requires a reasonable amount of typing. This program does the typing for students so that they can speed up their workflows.
+This script automatically types commands into a terminal. It is designed to help computer science students at Harper College prepare their assignments for submission.
+
+Students at Harper are often required to use the `script` Unix command to record the inputs and outputs of their programs. This requires running their programs several times, and doing so requires a reasonable amount of typing. This program does the typing for students so that they can speed up their workflows.
 
 Autoscript was designed to run on Ubuntu Server. Users will usually invoke this script over SSH rather than run it locally on their own computers.
 
@@ -64,11 +66,13 @@ If you pass the above file into Autoscript, the following will happen in order:
 3. Autoscript will type `echo 'Hello World'` into the pseudo-terminal and execute it.
 4. Autoscript will type `exit` into the pseudo-terminal and execute it. This will close the pseudo-terminal.
 
+This file isn't particularly useful or interesting, though. In fact, it may close the pseudo-terminal before the user even gets to see "Hello World" printed to the console.
+
 ### Using delays
 
-Autoscript doesn't know whether the commands it typed have finished executing. As such, it is necessary to instruct Autoscript to pause for a number of milliseconds after it has finished typing each command.
+Autoscript doesn't know whether the commands it typed have finished executing. As such, it is useful to instruct Autoscript to pause for a number of milliseconds after it has finished typing each command.
 
-Every configuration file may contain a `default_delay` label, specifying how many milliseconds Autoscript should pause after typing each command. The "Hello World" file from above can be rewritten like this:
+Every configuration file may contain a `default_delay` label, specifying how many milliseconds Autoscript should pause after typing each command. The "Hello World" file from above can be revised like this:
 
 ```yml
 default_delay: 500
@@ -79,7 +83,7 @@ commands:
 
 The `default_delay: 500` specifies that Autoscript should pause for 500 milliseconds (or 0.5 seconds) after entering each command. If the user does not provide a `default_delay` themselves, then `default_delay` is set to 0.
 
-Some commands take longer than others to execute. For instance, compiling a complex C++ program is likely to take much longer than `echo 'Hello World'`. Autoscript accounts for this by allowing the user to override `default_delay` for individual commands. Suppose that we are using `g++` to compile a program, and we want Autoscript to pause for a full 5 seconds while this happens. We could make the following addition to the file above:
+Some Unix commands take longer than others to execute. For instance, compiling a complex C++ program is likely to take much longer than `echo 'Hello World'`. Autoscript accounts for this by allowing the user to override `default_delay` for individual commands. Suppose that we are using `g++` to compile a program, and we want Autoscript to pause for a full 5 seconds while this happens. We could make the following addition to the file above:
 
 ```yml
 default_delay: 500
