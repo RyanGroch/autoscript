@@ -269,23 +269,32 @@ validate_file_or_exit() {
     if ! [ -f "$1" ]; 
     then
         throw_err_and_exit \
-        "Error: '$1' is not a valid file or option."
+        "Error: '$1' is not a valid file name or option."
     fi
 
     # Try to parse the file as YAML.
-    yq -e "$1" &>/dev/null
+    error=$(yq -e "$1" 2>&1 >/dev/null)
 
     # Check that parsing succeeded, or exit.
-    if [ $? -ne 0 ];
+    if [ -n "$error" ];
     then
         throw_err_and_exit \
-        "Error: '$1' is not a valid configuration file."
+        "Error: '$1' does not use correct YAML syntax." \
+        "The parser raised the following error:" \
+        "" \
+        "\"$error\"" \
+        "" \
+        "Bear in mind that this error could be misleading."
     
     # Check for presence of 'commands' label, or exit.
     elif [ "$(yq '.commands | has(0)' "$1")" = false ]; 
     then
         throw_err_and_exit \
-        "Error: '$1' needs a 'commands' label with at least one item."
+        "Error: '$1' needs a 'commands' label with at least one item." \
+        "For example, the following would be acceptable:" \
+        "" \
+        "commands:" \
+        "  - \"echo 'This is a commands label with one item.'\""
     fi
 
     echo "Configuration file is valid."
@@ -366,7 +375,9 @@ run_file() {
 #
 throw_err_and_exit() {
     echo -e "$red"
-    echo    "$1"
+    for str in "$@"; do
+        echo "$str"
+    done
     echo -e "$nc"
     exit 1
 }
