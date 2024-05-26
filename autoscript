@@ -19,9 +19,9 @@
 #   tmux    - terminal multiplexer.                                #
 #   yq      - parses the YAML file passed as input.                #
 #                                                                  #
-# The following commands can install the above tools:              #
+# Fortunately, tmux is installed by default on Ubuntu Server.      #
+# The following command can install yq:                            #
 #                                                                  #
-#   sudo apt install tmux                                          #
 #   sudo snap install yq                                           #
 #                                                                  #
 ####################################################################
@@ -561,7 +561,6 @@ commands:
 # each of the commands below.
 # Note that the COMMAND: NUMBER_OF_MILLISECONDS syntax only
 # changes the delay for the command that you apply it to.
-# and we don't use it again until the script-print.
  
 # The below command types a comment IN our script.
 # Autoscript actually types the line below.
