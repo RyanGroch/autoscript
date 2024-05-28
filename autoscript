@@ -9,7 +9,7 @@
 # It is also capable of generating configuration files or an       #
 # example lab that showcases Autoscript's usage.                   #
 #                                                                  #
-# The intention of this program is to enable computer science      #
+# The purpose of this program is to enable computer science        #
 # students at Harper College to easily script their homework       #
 # assignments without much manual typing.                          #
 #                                                                  #
@@ -371,12 +371,12 @@ run_file() {
 # Prints an error message and exits the program.
 #
 # Arguments:
-# $1: The error message that this function prints.
+# $@: The lines of the error message that this function prints.
 #
 throw_err_and_exit() {
     echo -e "$red"
-    for str in "$@"; do
-        echo "$str"
+    for err_line in "$@"; do
+        echo "$err_line"
     done
     echo -e "$nc"
     exit 1
@@ -385,7 +385,7 @@ throw_err_and_exit() {
 #
 # help_message
 #
-# The message the appears when the user enters the "--help" option,
+# The message that appears when the user enters the "--help" option,
 # or passes no arguments into Autoscript.
 #
 help_message() {
@@ -404,7 +404,7 @@ help_message() {
     echo    "                                                       "
     echo -e "${green}autoscript ${blue}CONFIG_FILE_NAME${nc}        "        
     echo    "Runs autoscript with the config file that you pass in. "
-    echo    "This is the main way to use Autoscript.                "
+    echo    "This is the main use of Autoscript.                    "
     echo    "                                                       "
     echo -e "${green}autoscript --config                            "
     echo -e "autoscript --config ${blue}NEW_FILE_NAME${nc}          " 
@@ -436,8 +436,8 @@ confirmation_message() {
     echo    "I'm done. If you wish to interrupt me after I start,   "
     echo    "press the following key combinations in order:         "
     echo    "                                                       "
-    echo -e "${blue}CTRL+B${nc} followed by ${blue}d${nc}           "
-    echo -e "followed by ${blue}CTRL+C${nc}                         "
+    echo -e "${blue}CTRL + b${nc} followed by ${blue}d${nc}         "
+    echo -e "followed by ${blue}CTRL + c${nc}                       "
     echo    "                                                       "
     read -p "<Press Enter to Begin>                                 "
 }
@@ -450,7 +450,7 @@ confirmation_message() {
 #
 # config_file_contents
 #
-# Here are the contents of the default configuration file that
+# These are the contents of the default configuration file that
 # is created when the user runs "autoscript --config".
 #
 config_file_contents() {
@@ -501,7 +501,7 @@ EOF
 #
 # example_config_contents
 #
-# Here are the contents of the configuration file for
+# These are the contents of the configuration file for
 # the example lab. This file is created when the
 # user runs "autoscript --example".
 #
@@ -599,7 +599,7 @@ EOF
 #
 # example_cpp_contents
 #
-# Here are the contents of the C++ file for
+# These are the contents of the C++ file for
 # the example lab. This file is created when the
 # user runs "autoscript --example".
 #
@@ -629,7 +629,7 @@ EOF
 #
 # example_info_contents
 #
-# Here are the contents of the info file for
+# These are the contents of the info file for
 # the example lab. This file is created when the
 # user runs "autoscript --example".
 #
@@ -658,7 +658,7 @@ EOF
 #
 # example_tpq_contents
 #
-# Here are the contents of the tpq file for
+# These are the contents of the tpq file for
 # the example lab. This file is created when the
 # user runs "autoscript --example".
 #
@@ -687,3 +687,26 @@ EOF
 
 # Entry point
 main "$1" "$2"
+
+
+# MIT License
+
+# Copyright (c) 2024 Ryan Groch
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.

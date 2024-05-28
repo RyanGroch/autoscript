@@ -1,5 +1,7 @@
 # Autoscript
 
+![Autoscript in action](AutoscriptDemo.GIF)
+
 ## Table of Contents
 
 - [Introduction](#introduction)
